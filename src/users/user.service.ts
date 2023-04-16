@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from './user.entity';
-import { CreateUserDto } from './create-user.dto';
+import { CreateUserDto, UpdateUserDto } from './user.dto';
 import { Repository } from 'typeorm';
 
 @Injectable()
@@ -20,31 +20,37 @@ export class UserService {
   }
 
   public async getUser(userId: number): Promise<User> {
-    return await this.userRepository.findOne({
-      where: { id: userId },
-    });
+    try {
+      return await this.userRepository.findOneOrFail({
+        where: { id: userId },
+      });
+    } catch (error) {
+      throw new NotFoundException('User not found');
+    }
   }
 
   public async editUser(
     userId: number,
-    createUserDto: CreateUserDto,
+    createUserDto: UpdateUserDto,
   ): Promise<User> {
-    const editedUser = await this.userRepository.findOne({
-      where: { id: userId },
-    });
+    try {
+      const editedUser = await this.userRepository.findOneOrFail({
+        where: { id: userId },
+      });
 
-    if (!editedUser) {
+      await this.userRepository.update({ id: userId }, createUserDto);
+      return editedUser;
+    } catch (error) {
       throw new NotFoundException('User not found');
     }
-    const result = await this.userRepository.update(
-      { id: userId },
-      createUserDto,
-    );
-    console.log(result);
-    return editedUser;
   }
 
-  public async deleteUser(userId: number): Promise<void> {
-    await this.userRepository.delete(userId);
+  public async deleteUser(userId: number): Promise<string> {
+    const res = await this.userRepository.delete(userId);
+    if (res.affected == 0) {
+      throw new NotFoundException('User not found');
+    } else {
+      return `userId ${userId} has been deleted`;
+    }
   }
 }

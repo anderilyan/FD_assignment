@@ -3,17 +3,39 @@ import {
   Post,
   Body,
   Get,
-  Patch,
+  Query,
   Param,
   Delete,
+  ParseIntPipe,
+  HttpStatus,
+  Put,
+  UseGuards,
 } from '@nestjs/common';
 import { UserService } from './user.service';
-import { CreateUserDto } from './create-user.dto';
+import { CreateUserDto, UpdateUserDto, UserDtoBody } from './user.dto';
 import { User } from './user.entity';
+import { ApiTags } from '@nestjs/swagger';
+import { UserExternalService } from './user-external.service';
+import { AuthGuard } from 'src/guards/auth.guards';
 
+@ApiTags('User')
 @Controller('user')
 export class UserController {
-  constructor(private userService: UserService) {}
+  constructor(
+    private userService: UserService,
+    private userExternalService: UserExternalService,
+  ) {}
+
+  @Get('/fetch')
+  public fetchUser(
+    @Query(
+      'page',
+      new ParseIntPipe({ errorHttpStatusCode: HttpStatus.NOT_ACCEPTABLE }),
+    )
+    page: number,
+  ): any {
+    return this.userExternalService.findAll(page);
+  }
 
   @Post('/')
   public async createUser(@Body() createUserDto: CreateUserDto): Promise<User> {
@@ -26,20 +48,24 @@ export class UserController {
   }
 
   @Get('/:userId')
-  public async getUser(@Param('userId') userId: number) {
+  public async getUser(
+    @Param(
+      'userId',
+      new ParseIntPipe({ errorHttpStatusCode: HttpStatus.NOT_ACCEPTABLE }),
+    )
+    userId: number,
+  ) {
     return await this.userService.getUser(userId);
   }
 
-  @Patch('/:userId')
-  public async editUser(
-    @Body() createUserDto: CreateUserDto,
-    @Param('userId') userId: number,
-  ): Promise<User> {
-    return await this.userService.editUser(userId, createUserDto);
+  @Put('/')
+  public async editUser(@Body() updateUserDto: UpdateUserDto): Promise<User> {
+    return await this.userService.editUser(updateUserDto.id, updateUserDto);
   }
 
-  @Delete('/:userId')
-  public async deleteUser(@Param('userId') userId: number) {
-    return await this.userService.deleteUser(userId);
+  @Delete('/')
+  @UseGuards(AuthGuard)
+  public async deleteUser(@Body() BodyRequest: UserDtoBody) {
+    return await this.userService.deleteUser(BodyRequest.id);
   }
 }

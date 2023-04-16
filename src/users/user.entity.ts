@@ -1,13 +1,15 @@
 /* eslint-disable prettier/prettier */
-import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
+import { Column, CreateDateColumn, DeleteDateColumn, Entity, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
 
 @Entity()
 export class User {
     @PrimaryGeneratedColumn()
     id: number;
 
-    @Column()
-    email: string 
+    @Column({
+        unique: true
+    })
+    email: string
 
     @Column()
     first_name: string
@@ -17,16 +19,17 @@ export class User {
     last_name: string
 
     
-    @Column()
+    @Column({
+        nullable: true
+    })
     avatar: string
 
-    
-    @Column()
+    @CreateDateColumn()
     created_at: Date
 
-    @Column()
+    @UpdateDateColumn()
     updated_at: Date
 
-    @Column()
+    @DeleteDateColumn()
     deleted_at: Date
 }
